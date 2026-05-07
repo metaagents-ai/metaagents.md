@@ -76,9 +76,7 @@ dependencies:
     - cve-database
   mcps:
     - semgrep
-prereqs:
-  - message: "Requires a Semgrep API key. Set SEMGREP_KEY in your environment."
-  - file: references/setup-guide.md
+prereqs: "Requires a Semgrep API key. Set SEMGREP_KEY in your environment. Read references/setup-guide.md for details."
 ---
 
 ## Instructions
@@ -94,23 +92,15 @@ When reviewing code for security issues...
 | `description` | Yes | string | 1-1024 chars |
 | `version` | No | string | Semver. Defaults to `0.0.1` |
 | `dependencies` | No | object | Skills and MCPs this skill requires |
-| `prereqs` | No | array | Prerequisites the LLM should check after installation |
+| `prereqs` | No | string | Prerequisites the LLM should check after installation |
 
 ### Prerequisites
 
-The `prereqs` field defines conditions or setup steps that should be verified after a skill is installed. Each entry is one of:
-
-- **`message`** — A plain-text instruction for the LLM to present or verify
-- **`file`** — A relative path to a file the LLM should read for setup guidance
+The `prereqs` field is an optional string describing conditions or setup steps that should be verified after a skill is installed. The LLM reads it and takes appropriate action (e.g., verifying env vars, running setup commands, reading referenced files, informing the user).
 
 ```yaml
-prereqs:
-  - message: "Run 'npm install -g playwright' before using this skill."
-  - file: references/setup-guide.md
-  - message: "Ensure OPENAI_API_KEY is set in your environment."
+prereqs: "Run 'npm install -g playwright'. Ensure OPENAI_API_KEY is set. Read references/setup-guide.md for configuration details."
 ```
-
-After installation, the LLM reads all prereqs and takes appropriate action (e.g., verifying env vars, running setup commands, informing the user).
 
 ### MCP JSON
 
