@@ -57,7 +57,7 @@ Review the PR for security vulnerabilities and style violations...
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `name` | Yes | string | 1-64 chars, lowercase kebab-case |
+| `name` | Yes | string | 1-64 chars, lowercase kebab-case, optional `scope/name` format |
 | `description` | Yes | string | 1-1024 chars |
 | `version` | No | string | Semver. Defaults to `0.0.1` |
 | `dependencies` | No | object | Skills and MCPs this agent requires |
@@ -88,7 +88,7 @@ When reviewing code for security issues...
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `name` | Yes | string | 1-64 chars, lowercase kebab-case |
+| `name` | Yes | string | 1-64 chars, lowercase kebab-case, optional `scope/name` format |
 | `description` | Yes | string | 1-1024 chars |
 | `version` | No | string | Semver. Defaults to `0.0.1` |
 | `dependencies` | No | object | Skills and MCPs this skill requires |
@@ -114,30 +114,50 @@ Standard [Model Context Protocol](https://modelcontextprotocol.io) server config
 }
 ```
 
+## Scoped Names
+
+Names support an optional scope prefix using `scope/name` format:
+
+- `security-audit` — unscoped (community/standard)
+- `langsensei/xiaohongshu` — scoped to `langsensei`
+- `openclaw/weather` — scoped to `openclaw`
+
+Scope rules:
+- Scope and name each follow kebab-case rules (`[a-z0-9-]`)
+- A single `/` separates scope from name
+- Scoped and unscoped names coexist in the same registry
+- The full string (including scope) is the unique identifier
+
 ## Directory Layout
+
+The registry directory is organized by type, with scoped names mapped to subdirectories:
 
 ```
 <registry>/
 ├── agents/
-│   └── <name>/
-│       └── AGENTS.md
+│   ├── <name>/AGENTS.md              # unscoped
+│   └── <scope>/<name>/AGENTS.md      # scoped
 ├── skills/
-│   └── <name>/
+│   ├── <name>/SKILL.md               # unscoped
+│   └── <scope>/<name>/               # scoped
 │       ├── SKILL.md
-│       ├── scripts/       # optional
-│       ├── references/    # optional
-│       └── assets/        # optional
+│       ├── scripts/                   # optional
+│       ├── references/                # optional
+│       └── assets/                    # optional
 └── mcps/
-    └── <name>.json
+    ├── <name>.json                    # unscoped
+    └── <scope>/<name>.json            # scoped
 ```
+
+How scoped names are mapped to the runtime environment (e.g., flattening for systems that require a single-level directory) is outside the scope of this specification.
 
 ## Dependencies
 
 ```yaml
 dependencies:
   skills:
-    - skill-name-a
-    - skill-name-b
+    - langsensei/security-audit
+    - style-guide
   mcps:
     - mcp-name-a
 ```
