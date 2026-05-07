@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MetaAgents — Compose agents from skills and MCPs</title>
+  <meta name="description" content="An open standard for composing, distributing, and resolving dependencies between agents, skills, and MCPs.">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --fg: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --accent2: #7ee787;
+      --surface: #161b22;
+      --border: #30363d;
+      --code-bg: #1c2128;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    .container { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero .tagline {
+      font-size: 1.25rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+    .hero .links a {
+      display: inline-block;
+      margin: 0 12px;
+      padding: 10px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: opacity 0.2s;
+    }
+    .hero .links a:hover { opacity: 0.85; }
+    .hero .links .primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    .hero .links .secondary {
+      border: 1px solid var(--border);
+      color: var(--fg);
+    }
+
+    /* Sections */
+    section { padding: 48px 0; }
+    section h2 {
+      font-size: 1.75rem;
+      margin-bottom: 16px;
+      color: var(--fg);
+    }
+    section p, section li {
+      color: var(--muted);
+      font-size: 1rem;
+    }
+    section ul {
+      list-style: none;
+      padding: 0;
+    }
+    section li {
+      padding: 8px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+    section li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+
+    /* Code blocks */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 16px 0;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      color: var(--fg);
+    }
+    .inline-code {
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.875rem;
+    }
+
+    /* Concepts grid */
+    .concepts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .concept-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .concept-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: var(--accent);
+    }
+    .concept-card p {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .concept-card .file {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--accent2);
+      margin-top: 8px;
+    }
+
+    /* Comparison */
+    .comparison {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      margin: 24px 0;
+    }
+    .comparison h3 { margin-bottom: 12px; }
+    .comparison table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .comparison th, .comparison td {
+      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .comparison th { color: var(--muted); font-weight: 600; }
+    .comparison td { color: var(--fg); }
+
+    /* Footer */
+    footer {
+      padding: 48px 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.875rem;
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header class="hero">
+    <h1>MetaAgents</h1>
+    <p class="tagline">An open standard for composing agents from reusable skills and MCPs — with dependency resolution built in.</p>
+    <div class="links">
+      <a class="primary" href="https://github.com/metaagents-ai/metaagents">Read the Spec</a>
+      <a class="secondary" href="https://github.com/metaagents-ai/metaagents">GitHub</a>
+    </div>
+  </header>
+
+  <section>
+    <h2>Why MetaAgents?</h2>
+    <p>Existing standards define agents and skills in isolation. MetaAgents adds the missing piece: <strong>how they compose together</strong>.</p>
+    <ul>
+      <li><strong>AGENTS.md</strong> tells an agent what to do</li>
+      <li><strong>Agent Skills</strong> packages a single capability</li>
+      <li><strong>MetaAgents</strong> declares how agents, skills, and MCPs depend on each other</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Core Concepts</h2>
+    <div class="concepts">
+      <div class="concept-card">
+        <h3>Agent</h3>
+        <p>An execution template that combines instructions with skills and MCPs.</p>
+        <div class="file">AGENTS.md</div>
+      </div>
+      <div class="concept-card">
+        <h3>Skill</h3>
+        <p>A reusable capability package — methodology, knowledge, or workflow.</p>
+        <div class="file">SKILL.md</div>
+      </div>
+      <div class="concept-card">
+        <h3>MCP</h3>
+        <p>A Model Context Protocol server configuration for external tools.</p>
+        <div class="file">&lt;name&gt;.json</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How It Works</h2>
+    <p>Add a <code class="inline-code">dependencies</code> field to your frontmatter. That's it.</p>
+    <pre><code>---
+name: langsensei/code-reviewer
+description: Reviews PRs with security and style checks.
+version: 1.0.0
+dependencies:
+  skills:
+    - langsensei/security-audit
+    - style-guide
+  mcps:
+    - github
+---
+
+## Instructions
+
+Review the PR for security vulnerabilities...</code></pre>
+    <p>Skills can depend on other skills and MCPs. The full graph resolves automatically.</p>
+  </section>
+
+  <section>
+    <h2>Key Features</h2>
+    <ul>
+      <li><strong>Backward compatible</strong> — existing AGENTS.md and SKILL.md files work without changes</li>
+      <li><strong>Scoped names</strong> — <code class="inline-code">scope/name</code> format prevents conflicts across sources</li>
+      <li><strong>Dependency graph</strong> — topological resolution with cycle detection</li>
+      <li><strong>Prerequisites</strong> — skills declare setup steps the LLM verifies after install</li>
+      <li><strong>Format-only</strong> — no opinions on package managers, runtimes, or execution</li>
+    </ul>
+  </section>
+
+  <section>
+    <div class="comparison">
+      <h3>Comparison</h3>
+      <table>
+        <tr>
+          <th></th>
+          <th>AGENTS.md</th>
+          <th>Agent Skills</th>
+          <th>MetaAgents</th>
+        </tr>
+        <tr>
+          <td>Agent instructions</td>
+          <td>✓</td>
+          <td></td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Skill format</td>
+          <td></td>
+          <td>✓</td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Dependency declarations</td>
+          <td></td>
+          <td></td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Scoped names</td>
+          <td></td>
+          <td></td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>MCP integration</td>
+          <td></td>
+          <td></td>
+          <td>✓</td>
+        </tr>
+        <tr>
+          <td>Graph resolution</td>
+          <td></td>
+          <td></td>
+          <td>✓</td>
+        </tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Get Started</h2>
+    <p>MetaAgents is just YAML frontmatter in your existing markdown files. No new tools required.</p>
+    <pre><code># 1. Add dependencies to your AGENTS.md
+---
+name: my-agent
+description: Does useful things.
+dependencies:
+  skills:
+    - some-skill
+  mcps:
+    - some-mcp
+---
+
+# 2. Your skill declares its own deps
+---
+name: some-skill
+description: A reusable capability.
+dependencies:
+  mcps:
+    - another-mcp
+prereqs: "Run 'pip install x' first."
+---</code></pre>
+  </section>
+</div>
+
+<footer>
+  <p>
+    <a href="https://github.com/metaagents-ai/metaagents">GitHub</a> ·
+    MIT License ·
+    MetaAgents is a community standard
+  </p>
+</footer>
+
+</body>
+</html>
