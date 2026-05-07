@@ -108,31 +108,43 @@ Standard [Model Context Protocol](https://modelcontextprotocol.io) server config
 
 The MCP name is derived from the filename and (for scoped names) the parent directory:
 
-- `mcps/github.json` → name is `github`
+- `mcps/filesystem.json` → name is `filesystem`
 - `mcps/io.github.modelcontextprotocol/filesystem.json` → name is `io.github.modelcontextprotocol/filesystem`
 
 ```json
 {
   "type": "stdio",
   "command": "npx",
-  "args": ["@modelcontextprotocol/server-github"]
+  "args": ["@modelcontextprotocol/server-filesystem"]
 }
 ```
 
+#### MCP name validation
+
+MCP names follow the validation rules of the [official MCP registry](https://registry.modelcontextprotocol.io). MetaAgents accepts any name the registry would accept, plus an unscoped form for local-only use.
+
+| Form | Pattern | Length | Use case |
+|------|---------|--------|----------|
+| **Scoped** (registry-aligned) | `^[A-Za-z0-9.-]+/[A-Za-z0-9._-]+$` | 3-200 chars | Public MCPs (resolvable from the registry) |
+| **Unscoped** (local) | `^[A-Za-z0-9._-]+$` | 1-64 chars | Internal / community packages where collision is not a concern |
+
+**Why MCP rules differ from Agent/Skill rules.** MCPs are referenced from a public ownership-verified registry, which is the single source of truth for what scoped names exist. Per the [robustness principle](https://en.wikipedia.org/wiki/Robustness_principle) — *be liberal in what you accept* — MetaAgents accepts every name the registry accepts and does not impose additional syntactic restrictions on top (in particular: mixed case, underscores, and longer names are all permitted, matching the registry exactly). Agents and Skills, by contrast, follow the lowercase-kebab convention inherited from [agents.md](https://agents.md) and [Agent Skills](https://agentskills.io) and have their own stricter rules defined in their respective frontmatter tables.
+
 ## Scoped Names
 
-Agent, skill, and MCP names support an optional scope prefix using `scope/name` format:
+Agent and skill names support an optional scope prefix using `scope/name` format:
 
 - `security-audit` — unscoped (community/standard)
 - `langsensei/xiaohongshu` — scoped to `langsensei`
 - `openclaw/weather` — scoped to `openclaw`
-- `io.github.modelcontextprotocol/filesystem` — MCP using reverse-DNS scope
 
-Scope rules:
+Scope rules for agents and skills:
 - The **name part** (after `/`) follows kebab-case rules (`[a-z0-9-]`). The **scope part** (before `/`) follows the same rules but additionally allows `.` to support reverse-DNS-style namespaces. A scope is treated as a single atomic identifier — `io.playwright` and `com.example.team` are each *one* scope string, not nested sub-segments. Dots are not permitted in the name part.
 - A single `/` separates scope from name
 - Scoped and unscoped names coexist in the same registry
 - The full string (including scope) is the unique identifier — `security-audit` and `langsensei/security-audit` are two distinct entries, not aliases
+
+For MCP names, see [MCP name validation](#mcp-name-validation) — MCPs follow the official registry's pattern, which is more permissive than the agent/skill rules above.
 
 ### Recommended scope conventions
 
