@@ -238,7 +238,6 @@ dependencies:
 ## Instructions
 
 Review the PR for security vulnerabilities...</code></pre>
-    <p>Skills can depend on other skills and MCPs. The full graph resolves automatically.</p>
   </section>
 
   <section>
@@ -311,19 +310,19 @@ name: my-agent
 description: Does useful things.
 dependencies:
   skills:
-    - some-skill
+    - langsensei/some-skill
   mcps:
     - some-mcp
 ---
 
 # 2. Your skill declares its own deps
 ---
-name: some-skill
+name: langsensei/some-skill
 description: A reusable capability.
 dependencies:
   mcps:
     - another-mcp
-prereqs: "Run 'pip install x' first."
+prereqs: "Run 'pip install x' first. Read references/setup.md for details."
 ---</code></pre>
   </section>
 </div>
