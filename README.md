@@ -169,10 +169,6 @@ MetaAgents is format-level only. It does **not** define:
 - How to interpret instructions (that's for LLMs)
 - How to spawn MCP servers (that's for substrates)
 
-## Reference Implementation
-
-[@emploke/catalog](https://github.com/LangSensei/emploke) — a TypeScript library implementing MetaAgents resolution and local registry operations.
-
 ## License
 
 [MIT](LICENSE)
