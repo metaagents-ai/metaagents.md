@@ -57,7 +57,7 @@ Review the PR for security vulnerabilities and style violations...
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `name` | Yes | string | 1-64 chars, lowercase kebab-case, optional `scope/name` format |
+| `name` | Yes | string | Lowercase kebab-case identifier, optional `scope/name` format. Total length 1-64 chars including any scope prefix (see [Scoped Names](#scoped-names)) |
 | `description` | Yes | string | 1-1024 chars |
 | `version` | No | string | Semver. Defaults to `0.0.1` |
 | `dependencies` | No | object | Skills and MCPs this agent requires |
@@ -88,7 +88,7 @@ When reviewing code for security issues...
 
 | Field | Required | Type | Description |
 |-------|----------|------|-------------|
-| `name` | Yes | string | 1-64 chars, lowercase kebab-case, optional `scope/name` format |
+| `name` | Yes | string | Lowercase kebab-case identifier, optional `scope/name` format. Total length 1-64 chars including any scope prefix (see [Scoped Names](#scoped-names)) |
 | `description` | Yes | string | 1-1024 chars |
 | `version` | No | string | Semver. Defaults to `0.0.1` |
 | `dependencies` | No | object | Skills and MCPs this skill requires |
@@ -109,7 +109,7 @@ Standard [Model Context Protocol](https://modelcontextprotocol.io) server config
 The MCP name is derived from the filename and (for scoped names) the parent directory:
 
 - `mcps/github.json` → name is `github`
-- `mcps/io.playwright/mcp.json` → name is `io.playwright/mcp`
+- `mcps/io.github.modelcontextprotocol/filesystem.json` → name is `io.github.modelcontextprotocol/filesystem`
 
 ```json
 {
@@ -126,7 +126,7 @@ Agent, skill, and MCP names support an optional scope prefix using `scope/name` 
 - `security-audit` — unscoped (community/standard)
 - `langsensei/xiaohongshu` — scoped to `langsensei`
 - `openclaw/weather` — scoped to `openclaw`
-- `io.playwright/mcp` — MCP using reverse-DNS scope
+- `io.github.modelcontextprotocol/filesystem` — MCP using reverse-DNS scope
 
 Scope rules:
 - The **name part** (after `/`) follows kebab-case rules (`[a-z0-9-]`). The **scope part** (before `/`) follows the same rules but additionally allows `.` to support reverse-DNS-style namespaces. A scope is treated as a single atomic identifier — `io.playwright` and `com.example.team` are each *one* scope string, not nested sub-segments. Dots are not permitted in the name part.
@@ -178,7 +178,7 @@ dependencies:
     - langsensei/security-audit
     - style-guide
   mcps:
-    - io.playwright/mcp
+    - io.github.modelcontextprotocol/filesystem
     - github
 ```
 
