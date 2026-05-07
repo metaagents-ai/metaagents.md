@@ -129,7 +129,7 @@ Agent, skill, and MCP names support an optional scope prefix using `scope/name` 
 - `io.playwright/mcp` — MCP using reverse-DNS scope
 
 Scope rules:
-- Names follow kebab-case rules (`[a-z0-9-]`). Scopes follow the same rules but additionally allow `.` to support reverse-DNS-style namespaces. The scope is the entire string before `/` and is treated as a single atomic identifier — `io.playwright` and `com.example.team` are each *one* scope, not nested sub-segments.
+- The **name part** (after `/`) follows kebab-case rules (`[a-z0-9-]`). The **scope part** (before `/`) follows the same rules but additionally allows `.` to support reverse-DNS-style namespaces. A scope is treated as a single atomic identifier — `io.playwright` and `com.example.team` are each *one* scope string, not nested sub-segments. Dots are not permitted in the name part.
 - A single `/` separates scope from name
 - Scoped and unscoped names coexist in the same registry
 - The full string (including scope) is the unique identifier — `security-audit` and `langsensei/security-audit` are two distinct entries, not aliases
@@ -138,7 +138,12 @@ Scope rules:
 
 For agents and skills, scopes typically reflect publisher identity (`langsensei/`, `openclaw/`).
 
-For MCPs, the [official MCP registry](https://registry.modelcontextprotocol.io) uses **reverse-DNS scopes** based on a domain the publisher controls (e.g. `ai.aarna/atars-mcp`, `io.modelcontextprotocol/server-github`). MetaAgents recommends — but does not require — the same convention for MCPs published to public registries, so that names remain globally unique across publishers.
+For MCPs, the [official MCP registry](https://registry.modelcontextprotocol.io) uses **reverse-DNS scopes** that the publisher can prove ownership of. Two namespace patterns are common:
+
+- **GitHub-verified** — `io.github.<gh-user-or-org>/<server>` (e.g. `io.github.modelcontextprotocol/filesystem`, `io.github.BuyWhere/buywhere-mcp`)
+- **Domain-verified** — `<reverse-domain>/<server>` (e.g. `ai.aarna/atars-mcp`, `ac.inference.sh/mcp`)
+
+MetaAgents recommends — but does not require — the same convention for MCPs published to public registries, so that names remain globally unique across publishers.
 
 Unscoped MCP names remain valid for local-only use, internal registries, or community packages where collision is not a concern.
 
