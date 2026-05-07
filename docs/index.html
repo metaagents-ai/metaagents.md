@@ -214,7 +214,7 @@
       </div>
       <div class="concept-card">
         <h3>MCP</h3>
-        <p>A Model Context Protocol server configuration for external tools.</p>
+        <p>A <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server configuration. Public servers are listed in the <a href="https://registry.modelcontextprotocol.io">official MCP registry</a>.</p>
         <div class="file">&lt;name&gt;.json</div>
       </div>
     </div>
@@ -232,19 +232,21 @@ dependencies:
     - langsensei/security-audit
     - style-guide
   mcps:
+    - io.github/copilot
     - github
 ---
 
 ## Instructions
 
 Review the PR for security vulnerabilities...</code></pre>
+    <p><small>MCP names follow the same scoped-name convention used by the <a href="https://registry.modelcontextprotocol.io">official MCP registry</a> — both <code class="inline-code">io.github/copilot</code> (registry-canonical reverse-DNS) and <code class="inline-code">github</code> (unscoped local) are valid references.</small></p>
   </section>
 
   <section>
     <h2>Key Features</h2>
     <ul>
       <li><strong>Backward compatible</strong> — existing AGENTS.md and SKILL.md files work without changes</li>
-      <li><strong>Scoped names</strong> — <code class="inline-code">scope/name</code> format prevents conflicts across sources</li>
+      <li><strong>Scoped names</strong> — <code class="inline-code">scope/name</code> format prevents conflicts across sources, and matches the <a href="https://registry.modelcontextprotocol.io">official MCP registry</a> convention</li>
       <li><strong>Dependency graph</strong> — topological resolution with cycle detection</li>
       <li><strong>Prerequisites</strong> — skills declare setup steps the LLM verifies after install</li>
       <li><strong>Format-only</strong> — no opinions on package managers, runtimes, or execution</li>
@@ -324,6 +326,18 @@ dependencies:
     - another-mcp
 prereqs: "Run 'pip install x' first. Read references/setup.md for details."
 ---</code></pre>
+  </section>
+
+  <section>
+    <h2>Ecosystem</h2>
+    <p>MetaAgents is designed to layer on top of existing community standards rather than replace them:</p>
+    <ul>
+      <li><a href="https://agents.md"><strong>agents.md</strong></a> — the underlying instruction format for agents</li>
+      <li><a href="https://agentskills.io"><strong>Agent Skills</strong></a> — the underlying skill packaging format</li>
+      <li><a href="https://modelcontextprotocol.io"><strong>Model Context Protocol</strong></a> — the underlying tool-server protocol for MCPs</li>
+      <li><a href="https://registry.modelcontextprotocol.io"><strong>MCP Registry</strong></a> — the official directory of public MCP servers; MetaAgents reuses its <code class="inline-code">scope/name</code> identifier convention</li>
+    </ul>
+    <p>Tools that don't understand MetaAgents simply ignore the extra frontmatter fields. Tools that do can resolve dependency graphs, install transitively, and verify prerequisites.</p>
   </section>
 </div>
 
