@@ -140,7 +140,7 @@ For agents and skills, scopes typically reflect publisher identity (`langsensei/
 
 For MCPs, the [official MCP registry](https://registry.modelcontextprotocol.io) uses **reverse-DNS scopes** that the publisher can prove ownership of. Two namespace patterns are common:
 
-- **GitHub-verified** — `io.github.<gh-user-or-org>/<server>` (e.g. `io.github.modelcontextprotocol/filesystem`, `io.github.BuyWhere/buywhere-mcp`)
+- **GitHub-verified** — `io.github.<gh-user-or-org>/<server>` (e.g. `io.github.modelcontextprotocol/filesystem`)
 - **Domain-verified** — `<reverse-domain>/<server>` (e.g. `ai.aarna/atars-mcp`, `ac.inference.sh/mcp`)
 
 MetaAgents recommends — but does not require — the same convention for MCPs published to public registries, so that names remain globally unique across publishers.
