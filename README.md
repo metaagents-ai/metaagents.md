@@ -174,4 +174,4 @@ Implementations are free to build any of these on top.
 
 ## License
 
-[CC-BY-4.0](LICENSE)
+[MIT](LICENSE)
