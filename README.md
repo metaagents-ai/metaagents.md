@@ -180,7 +180,10 @@ The registry directory is organized by type, with scoped names mapped to subdire
     └── <scope>/<name>.json            # scoped
 ```
 
-How scoped names are mapped to the runtime environment (e.g., flattening for systems that require a single-level directory) is outside the scope of this specification.
+How scoped names are mapped to the runtime environment is outside the scope of this specification. Two implementer concerns worth calling out:
+
+- **Flattening** for systems that require a single-level directory (e.g. encoding `scope/name` as `scope__name`).
+- **Case-sensitive uniqueness** is part of the abstract spec, but on case-insensitive filesystems (Windows NTFS default, macOS APFS default) MCP names that differ only in case will collide on disk; implementations may need to normalize, hash, or otherwise disambiguate such names.
 
 ## Dependencies
 
