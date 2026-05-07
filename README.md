@@ -8,7 +8,7 @@
 [Agent Skills](https://agentskills.io) defines a portable skill format.  
 **MetaAgents** defines how they relate to each other — dependency declarations, composition rules, and resolution semantics.
 
-MetaAgents extends the existing community standards. If your agent or skill has no dependencies, it's already MetaAgents-compatible.
+MetaAgents extends the existing community standards. If your agent or skill has no dependencies, it's already MetaAgents-compatible. MCPs are referenced by the same scoped-name convention used by the [official MCP registry](https://registry.modelcontextprotocol.io), so MetaAgents-aware tools can install registry servers by their canonical names.
 
 ## Core Concepts
 
@@ -16,7 +16,7 @@ MetaAgents extends the existing community standards. If your agent or skill has 
 |---------|------|-------------|
 | **Agent** | `AGENTS.md` | An execution template — combines instructions with skills and MCPs |
 | **Skill** | `SKILL.md` | A reusable capability package — methodology, knowledge, or workflow |
-| **MCP** | `<name>.json` | A Model Context Protocol server configuration |
+| **MCP** | `<name>.json` | A [Model Context Protocol](https://modelcontextprotocol.io) server configuration. Public servers are catalogued in the [MCP Registry](https://registry.modelcontextprotocol.io). |
 
 Agents depend on skills and MCPs. Skills can depend on other skills and MCPs. MCPs are always leaf nodes.
 
