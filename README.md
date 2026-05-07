@@ -37,12 +37,12 @@ A superset of [AGENTS.md](https://agents.md). Standard AGENTS.md files work as-i
 
 ```markdown
 ---
-name: code-reviewer
+name: langsensei/code-reviewer
 description: Reviews pull requests with security and style checks.
 version: 1.0.0
 dependencies:
   skills:
-    - security-audit
+    - langsensei/security-audit
     - style-guide
   mcps:
     - github
@@ -104,7 +104,7 @@ prereqs: "Run 'npm install -g playwright'. Ensure OPENAI_API_KEY is set. Read re
 
 ### MCP JSON
 
-Standard [Model Context Protocol](https://modelcontextprotocol.io) server configuration. MetaAgents does not modify or interpret the contents.
+Standard [Model Context Protocol](https://modelcontextprotocol.io) server configuration. MetaAgents does not modify or interpret the contents. The MCP name is derived from the filename (e.g., `github.json` → name is `github`).
 
 ```json
 {
@@ -116,7 +116,7 @@ Standard [Model Context Protocol](https://modelcontextprotocol.io) server config
 
 ## Scoped Names
 
-Names support an optional scope prefix using `scope/name` format:
+Agent and skill names support an optional scope prefix using `scope/name` format:
 
 - `security-audit` — unscoped (community/standard)
 - `langsensei/xiaohongshu` — scoped to `langsensei`
@@ -127,6 +127,7 @@ Scope rules:
 - A single `/` separates scope from name
 - Scoped and unscoped names coexist in the same registry
 - The full string (including scope) is the unique identifier
+- MCPs do not support scoped names — MCP names are always plain kebab-case
 
 ## Directory Layout
 
@@ -145,8 +146,7 @@ The registry directory is organized by type, with scoped names mapped to subdire
 │       ├── references/                # optional
 │       └── assets/                    # optional
 └── mcps/
-    ├── <name>.json                    # unscoped
-    └── <scope>/<name>.json            # scoped
+    └── <name>.json                    # no scope support
 ```
 
 How scoped names are mapped to the runtime environment (e.g., flattening for systems that require a single-level directory) is outside the scope of this specification.
@@ -169,7 +169,7 @@ Both `skills` and `mcps` are optional arrays of names referencing other entries 
 1. **Topological order** — dependencies are resolved depth-first
 2. **No cycles** — circular dependencies are invalid
 3. **Missing dependencies** — resolution fails if a declared dependency is absent
-4. **Name uniqueness** — no two entries may share the same name across the registry
+4. **Name uniqueness** — the fully-qualified name (including scope if present) must be unique within each type (agents, skills, mcps)
 5. **MCPs are leaves** — MCP entries cannot declare dependencies
 
 ## Backward Compatibility
@@ -180,7 +180,7 @@ MetaAgents is a strict superset:
 - A `SKILL.md` without `dependencies` is a valid Agent Skills file
 - Tools that don't understand MetaAgents fields simply ignore them
 
-## Scope
+## Out of Scope
 
 MetaAgents is format-level only. It does **not** define:
 
