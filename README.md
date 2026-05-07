@@ -104,7 +104,12 @@ prereqs: "Run 'npm install -g playwright'. Ensure OPENAI_API_KEY is set. Read re
 
 ### MCP JSON
 
-Standard [Model Context Protocol](https://modelcontextprotocol.io) server configuration. MetaAgents does not modify or interpret the contents. The MCP name is derived from the filename (e.g., `github.json` → name is `github`).
+Standard [Model Context Protocol](https://modelcontextprotocol.io) server configuration. MetaAgents does not modify or interpret the contents.
+
+The MCP name is derived from the filename and (for scoped names) the parent directory:
+
+- `mcps/github.json` → name is `github`
+- `mcps/io.playwright/mcp.json` → name is `io.playwright/mcp`
 
 ```json
 {
@@ -116,18 +121,26 @@ Standard [Model Context Protocol](https://modelcontextprotocol.io) server config
 
 ## Scoped Names
 
-Agent and skill names support an optional scope prefix using `scope/name` format:
+Agent, skill, and MCP names support an optional scope prefix using `scope/name` format:
 
 - `security-audit` — unscoped (community/standard)
 - `langsensei/xiaohongshu` — scoped to `langsensei`
 - `openclaw/weather` — scoped to `openclaw`
+- `io.playwright/mcp` — MCP using reverse-DNS scope
 
 Scope rules:
-- Scope and name each follow kebab-case rules (`[a-z0-9-]`)
+- Scope and name each follow kebab-case rules (`[a-z0-9-]`), with `.` additionally allowed inside scope segments to support reverse-DNS-style namespaces (e.g. `io.playwright`, `com.example.team`)
 - A single `/` separates scope from name
 - Scoped and unscoped names coexist in the same registry
-- The full string (including scope) is the unique identifier
-- MCPs do not support scoped names — MCP names are always plain kebab-case
+- The full string (including scope) is the unique identifier — `security-audit` and `langsensei/security-audit` are two distinct entries, not aliases
+
+### Recommended scope conventions
+
+For agents and skills, scopes typically reflect publisher identity (`langsensei/`, `openclaw/`).
+
+For MCPs, the [official MCP registry](https://registry.modelcontextprotocol.io) uses **reverse-DNS scopes** based on a domain the publisher controls (e.g. `ai.aarna/atars-mcp`, `io.modelcontextprotocol/server-github`). MetaAgents recommends — but does not require — the same convention for MCPs published to public registries, so that names remain globally unique across publishers.
+
+Unscoped MCP names remain valid for local-only use, internal registries, or community packages where collision is not a concern.
 
 ## Directory Layout
 
@@ -146,7 +159,8 @@ The registry directory is organized by type, with scoped names mapped to subdire
 │       ├── references/                # optional
 │       └── assets/                    # optional
 └── mcps/
-    └── <name>.json                    # no scope support
+    ├── <name>.json                    # unscoped
+    └── <scope>/<name>.json            # scoped
 ```
 
 How scoped names are mapped to the runtime environment (e.g., flattening for systems that require a single-level directory) is outside the scope of this specification.
@@ -159,7 +173,8 @@ dependencies:
     - langsensei/security-audit
     - style-guide
   mcps:
-    - mcp-name-a
+    - io.playwright/mcp
+    - github
 ```
 
 Both `skills` and `mcps` are optional arrays of names referencing other entries in the same registry.
