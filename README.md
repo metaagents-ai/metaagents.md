@@ -8,7 +8,7 @@
 [Agent Skills](https://agentskills.io) defines a portable skill format.  
 **MetaAgents** defines how they relate to each other — dependency declarations, composition rules, and resolution semantics.
 
-MetaAgents extends the existing community standards. If your agent or skill has no dependencies, it's already MetaAgents-compatible. MCPs are referenced by the same scoped-name convention used by the [official MCP registry](https://registry.modelcontextprotocol.io), so MetaAgents-aware tools can install registry servers by their canonical names.
+MetaAgents extends the existing community standards. If your agent or skill has no dependencies, it's already MetaAgents-compatible. MCP names follow the same scoped convention used by the [official MCP registry](https://registry.modelcontextprotocol.io), so the same identifiers used in the registry can appear directly in MetaAgents dependency declarations. (How those identifiers are resolved to a package is outside this spec — see [Out of Scope](#out-of-scope).)
 
 ## Core Concepts
 
@@ -129,7 +129,7 @@ Agent, skill, and MCP names support an optional scope prefix using `scope/name` 
 - `io.playwright/mcp` — MCP using reverse-DNS scope
 
 Scope rules:
-- Scope and name each follow kebab-case rules (`[a-z0-9-]`), with `.` additionally allowed inside scope segments to support reverse-DNS-style namespaces (e.g. `io.playwright`, `com.example.team`)
+- Names follow kebab-case rules (`[a-z0-9-]`). Scopes follow the same rules but additionally allow `.` to support reverse-DNS-style namespaces. The scope is the entire string before `/` and is treated as a single atomic identifier — `io.playwright` and `com.example.team` are each *one* scope, not nested sub-segments.
 - A single `/` separates scope from name
 - Scoped and unscoped names coexist in the same registry
 - The full string (including scope) is the unique identifier — `security-audit` and `langsensei/security-audit` are two distinct entries, not aliases
