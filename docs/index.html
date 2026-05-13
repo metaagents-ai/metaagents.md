@@ -182,7 +182,7 @@
 <div class="container">
   <header class="hero">
     <h1>MetaAgents</h1>
-    <p class="tagline">An open standard for composing agents from reusable skills and MCPs — with dependency resolution built in.</p>
+    <p class="tagline">An open standard for composing agents from reusable skills and MCPs — with dependency resolution, naming rules, and MCP packaging built in.</p>
     <div class="links">
       <a class="primary" href="https://github.com/metaagents-ai/metaagents">Read the Spec</a>
       <a class="secondary" href="https://github.com/metaagents-ai/metaagents">GitHub</a>
@@ -191,11 +191,11 @@
 
   <section>
     <h2>Why MetaAgents?</h2>
-    <p>Existing standards define agents and skills in isolation. MetaAgents adds the missing piece: <strong>how they compose together</strong>.</p>
+    <p>Existing standards define agents and skills in isolation. MetaAgents adds the missing pieces: <strong>how they compose, how they're named across publishers, and how MCPs they depend on stay portable across operating systems</strong>.</p>
     <ul>
       <li><strong>AGENTS.md</strong> tells an agent what to do</li>
       <li><strong>Agent Skills</strong> packages a single capability</li>
-      <li><strong>MetaAgents</strong> declares how agents, skills, and MCPs depend on each other</li>
+      <li><strong>MetaAgents</strong> declares how agents, skills, and MCPs depend on each other — and how MCP server configs ship without breaking on Windows</li>
     </ul>
   </section>
 
@@ -215,40 +215,69 @@
       <div class="concept-card">
         <h3>MCP</h3>
         <p>A <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server configuration. Public servers are listed in the <a href="https://registry.modelcontextprotocol.io">official MCP registry</a>.</p>
-        <div class="file">&lt;name&gt;.json</div>
+        <div class="file">&lt;namespace&gt;_&lt;short&gt;.json</div>
       </div>
     </div>
   </section>
 
   <section>
     <h2>How It Works</h2>
-    <p>Add a <code class="inline-code">dependencies</code> field to your frontmatter. That's it.</p>
+    <p>Add MetaAgents fields to your frontmatter. <code class="inline-code">name</code> and <code class="inline-code">scope</code> are separate; <code class="inline-code">dependencies</code> reference other entries by their canonical URL.</p>
     <pre><code>---
-name: langsensei/code-reviewer
+name: code-reviewer
+scope: example-org
 description: Reviews PRs with security and style checks.
 version: 1.0.0
 dependencies:
   skills:
-    - langsensei/security-audit
-    - style-guide
+    - "https://github.com/example-org/catalog/tree/main/skills/security-audit"
+    - "https://github.com/example-org/catalog/tree/main/skills/style-guide"
   mcps:
-    - io.github.modelcontextprotocol/filesystem
-    - filesystem
+    - "https://github.com/example-org/catalog/tree/main/mcps/io.github.modelcontextprotocol_filesystem.json"
 ---
 
 ## Instructions
 
 Review the PR for security vulnerabilities...</code></pre>
-    <p><small>MCP names follow the validation rules of the <a href="https://registry.modelcontextprotocol.io">official MCP registry</a> — mixed case, underscores, and longer identifiers (up to 200 chars) are all permitted. Both <code class="inline-code">io.github.modelcontextprotocol/filesystem</code> (registry-canonical reverse-DNS) and <code class="inline-code">filesystem</code> (unscoped local) are valid references.</small></p>
+    <p><small><code class="inline-code">name</code> is the kebab-case short identifier; <code class="inline-code">scope</code> is the optional publisher namespace (kebab-case, with reverse-DNS allowed for the scope part). The fully-qualified name is computed as <code class="inline-code">&lt;scope&gt;/&lt;name&gt;</code>.</small></p>
+  </section>
+
+  <section>
+    <h2>MCP Packaging</h2>
+    <p>MCP server configs ship as JSON files in <code class="inline-code">mcps/</code>. The on-disk filename replaces <code class="inline-code">/</code> in the FQN with <code class="inline-code">_</code> for cross-platform compatibility (e.g. <code class="inline-code">io.github.modelcontextprotocol/filesystem</code> → <code class="inline-code">mcps/io.github.modelcontextprotocol_filesystem.json</code>).</p>
+    <pre><code>{
+  "_meta": {
+    "name": "io.playwright/mcp",
+    "origin": "https://github.com/example-org/catalog/tree/main/mcps/io.playwright_mcp.json"
+  },
+  "type": "stdio",
+  "command": "npx",
+  "args": [
+    "-y",
+    "@playwright/mcp@latest",
+    "--storage-state",
+    "${workspaceDir}/.playwright/storage-state.json"
+  ]
+}</code></pre>
+    <p>Required <code class="inline-code">_meta.*</code>: <code class="inline-code">name</code> (the FQN) and <code class="inline-code">origin</code> (the canonical source URL of this file). Two well-known placeholders are reserved:</p>
+    <ul>
+      <li><strong><code class="inline-code">${workspaceDir}</code></strong> — the active workspace's absolute path. Use for project-scoped state (per-workspace cookies, repo-local credentials).</li>
+      <li><strong><code class="inline-code">${globalDir}</code></strong> — a stable per-host directory chosen by the runtime. Use for state that belongs to the user account, not any single project (a global API token cache, model weights downloaded once per machine).</li>
+    </ul>
+    <p>Hosts substitute these before spawning the MCP child, so the path the server sees is already absolute and platform-correct. Other shell expansions (<code class="inline-code">$HOME</code>, <code class="inline-code">~/</code>, <code class="inline-code">${VAR}</code>) and shell wrappers (<code class="inline-code">["bash", "-c", "..."]</code>) are forbidden — the MCP spec is literal and must work cross-platform.</p>
   </section>
 
   <section>
     <h2>Key Features</h2>
     <ul>
-      <li><strong>Backward compatible</strong> — existing AGENTS.md and SKILL.md files work without changes</li>
-      <li><strong>Scoped names</strong> — <code class="inline-code">scope/name</code> format prevents conflicts across sources, and matches the <a href="https://registry.modelcontextprotocol.io">official MCP registry</a> convention</li>
-      <li><strong>Dependency graph</strong> — topological resolution with cycle detection</li>
-      <li><strong>Prerequisites</strong> — skills declare setup steps the LLM verifies after install</li>
+      <li><strong>Backward compatible</strong> — an AGENTS.md / SKILL.md that omits the MetaAgents-only fields still parses as agents.md / Agent Skills</li>
+      <li><strong>Separate <code class="inline-code">name</code> and <code class="inline-code">scope</code></strong> — both are top-level frontmatter fields; the FQN is computed</li>
+      <li><strong>URL-based dependencies</strong> — reference any public catalog by its canonical URL; cross-publisher composition works out of the box</li>
+      <li><strong>MCP origin tracking</strong> — every published MCP declares its <code class="inline-code">_meta.origin</code> so consumers can trace provenance</li>
+      <li><strong>Cross-platform MCPs</strong> — bare commands, literal args, and named placeholders for paths, so the same JSON ships to Windows and POSIX</li>
+      <li><strong>Dependency graph</strong> — topological resolution with cycle detection; MCPs are leaves</li>
+      <li><strong>Skill prerequisites</strong> — skills declare setup steps the LLM verifies after install (rejected on agents)</li>
+      <li><strong>CHANGELOG conventions</strong> — every published entry ships a <code class="inline-code">CHANGELOG.md</code> with <code class="inline-code">## X.Y.Z (YYYY-MM-DD)</code> headers and patch / minor / major bump guidance</li>
       <li><strong>Format-only</strong> — no opinions on package managers, runtimes, or execution</li>
     </ul>
   </section>
@@ -282,13 +311,13 @@ Review the PR for security vulnerabilities...</code></pre>
           <td>✓</td>
         </tr>
         <tr>
-          <td>Scoped names</td>
+          <td>Separate <code class="inline-code">name</code> + <code class="inline-code">scope</code></td>
           <td></td>
           <td></td>
           <td>✓</td>
         </tr>
         <tr>
-          <td>MCP integration</td>
+          <td>MCP packaging + cross-platform rules</td>
           <td></td>
           <td></td>
           <td>✓</td>
@@ -305,39 +334,43 @@ Review the PR for security vulnerabilities...</code></pre>
 
   <section>
     <h2>Get Started</h2>
-    <p>MetaAgents is just YAML frontmatter in your existing markdown files. No new tools required.</p>
-    <pre><code># 1. Add dependencies to your AGENTS.md
+    <p>MetaAgents is just YAML frontmatter in your existing markdown files plus a JSON shape for MCPs. No new tools required.</p>
+    <pre><code># 1. Add MetaAgents fields to your AGENTS.md
 ---
 name: my-agent
+scope: example-org
 description: Does useful things.
+version: 1.0.0
 dependencies:
   skills:
-    - langsensei/some-skill
+    - "https://github.com/example-org/catalog/tree/main/skills/some-skill"
   mcps:
-    - some-mcp
+    - "https://github.com/example-org/catalog/tree/main/mcps/some_mcp.json"
 ---
 
 # 2. Your skill declares its own deps
 ---
-name: langsensei/some-skill
+name: some-skill
+scope: example-org
 description: A reusable capability.
+version: 1.0.0
 dependencies:
   mcps:
-    - another-mcp
+    - "https://github.com/example-org/catalog/tree/main/mcps/another_mcp.json"
 prereqs: "Run 'pip install x' first. Read references/setup.md for details."
 ---</code></pre>
   </section>
 
   <section>
     <h2>Ecosystem</h2>
-    <p>MetaAgents is designed to layer on top of existing community standards rather than replace them:</p>
+    <p>MetaAgents builds on existing community standards:</p>
     <ul>
       <li><a href="https://agents.md"><strong>agents.md</strong></a> — the underlying instruction format for agents</li>
       <li><a href="https://agentskills.io"><strong>Agent Skills</strong></a> — the underlying skill packaging format</li>
       <li><a href="https://modelcontextprotocol.io"><strong>Model Context Protocol</strong></a> — the underlying tool-server protocol for MCPs</li>
-      <li><a href="https://registry.modelcontextprotocol.io"><strong>MCP Registry</strong></a> — the official directory of public MCP servers; MetaAgents reuses its <code class="inline-code">scope/name</code> identifier convention</li>
+      <li><a href="https://registry.modelcontextprotocol.io"><strong>MCP Registry</strong></a> — the official directory of public MCP servers; MetaAgents reuses its <code class="inline-code">scope/name</code> identifier convention for MCP <code class="inline-code">_meta.name</code></li>
     </ul>
-    <p>Tools that don't understand MetaAgents simply ignore the extra frontmatter fields. Tools that do can resolve dependency graphs, install transitively, and verify prerequisites.</p>
+    <p>Tools that don't understand MetaAgents simply ignore the extra frontmatter fields. Tools that do can resolve dependency graphs, install transitively, verify prerequisites, and spawn MCP children with the right per-workspace / per-host paths.</p>
   </section>
 </div>
 
