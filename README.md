@@ -4,11 +4,9 @@
 
 ## What is MetaAgents?
 
-[AGENTS.md](https://agents.md) defines how to instruct a coding agent.  
-[Agent Skills](https://agentskills.io) defines a portable skill format.  
-**MetaAgents** defines how they relate to each other — dependency declarations, composition rules, and resolution semantics.
-
-MetaAgents extends the existing community standards. If your agent or skill has no dependencies, it's already MetaAgents-compatible. MCP names follow the same scoped convention used by the [official MCP registry](https://registry.modelcontextprotocol.io), so the same identifiers used in the registry can appear directly in MetaAgents dependency declarations. (How those identifiers are resolved to a package is outside this spec — see [Out of Scope](#out-of-scope).)
+[AGENTS.md](https://agents.md) defines how to instruct a coding agent.
+[Agent Skills](https://agentskills.io) defines a portable skill format.
+**MetaAgents** defines how they relate to each other — frontmatter shape, naming, dependency declarations, MCP packaging rules, and resolution semantics — as a self-contained format spec.
 
 ## Core Concepts
 
@@ -16,7 +14,7 @@ MetaAgents extends the existing community standards. If your agent or skill has 
 |---------|------|-------------|
 | **Agent** | `AGENTS.md` | An execution template — combines instructions with skills and MCPs |
 | **Skill** | `SKILL.md` | A reusable capability package — methodology, knowledge, or workflow |
-| **MCP** | `<name>.json` | A [Model Context Protocol](https://modelcontextprotocol.io) server configuration. Public servers are catalogued in the [MCP Registry](https://registry.modelcontextprotocol.io). |
+| **MCP** | `<namespace>_<short>.json` | A [Model Context Protocol](https://modelcontextprotocol.io) server configuration. Public servers are catalogued in the [MCP Registry](https://registry.modelcontextprotocol.io). |
 
 Agents depend on skills and MCPs. Skills can depend on other skills and MCPs. MCPs are always leaf nodes.
 
@@ -29,200 +27,200 @@ Agent A
 └── MCP Q
 ```
 
-## File Formats
+## Directory Layout
 
-### AGENTS.md
+A catalog has a flat three-bucket layout:
 
-A superset of [AGENTS.md](https://agents.md). Standard AGENTS.md files work as-is.
+```
+<catalog-root>/
+  agents/<name>/AGENTS.md         (+ any sibling files)
+  skills/<name>/SKILL.md          (+ scripts/, templates/, references/, hooks/, etc.)
+  mcps/<namespace>_<short>.json
+```
 
-```markdown
+Rules:
+
+- The folder name MUST equal `frontmatter.name` (kebab-case, lowercase `[a-z0-9]+(-[a-z0-9]+)*`, no `/`).
+- A catalog typically shares one `scope:` value across its entries (e.g. `acme`); the scope is per-catalog convention, not part of the schema. Different catalogs use different scopes.
+- MCP filenames replace `/` in the FQN with `_` for cross-platform compatibility — the file whose `_meta.name` is `io.example/mcp` lives at `mcps/io.example_mcp.json`.
+
+## Naming Rules
+
+Frontmatter `name` and `scope` are **separate fields** (see Frontmatter sections below). The fully-qualified name is computed as `<scope>/<name>` when both are present.
+
+| Field | Grammar | Length | Notes |
+| --- | --- | --- | --- |
+| `name` | `^[a-z0-9]+(-[a-z0-9]+)*$` | ≤ 64 chars | identifier within a scope; no `/` |
+| `scope` | `^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)*$` | ≤ 64 chars | reverse-DNS allowed (e.g. `io.example`) |
+
+Do not write `name: "<scope>/<name>"` — `scope` and `name` are parsed independently.
+
+### MCP names
+
+MCP `_meta.name` is the MCP spec FQN. Reverse-DNS namespaces are preferred (`io.example/mcp`); single-segment vendor names (`acme/cli`, `azure/mcp`) are also accepted. MCP names follow the validation rules of the [official MCP registry](https://registry.modelcontextprotocol.io) and are more permissive than the agent/skill `name` field — mixed case, underscores, and longer identifiers (up to 200 chars) are all permitted.
+
+## Frontmatter — Skill (`skills/<name>/SKILL.md`)
+
+```yaml
 ---
-name: langsensei/code-reviewer
-description: Reviews pull requests with security and style checks.
+name: my-skill                                  # required, kebab-case, matches folder
+scope: example-org                              # optional but typical for published skills
+description: "What the skill does, one line."   # required, 1-1024 chars
+version: 1.0.0                                  # required, 3-segment semver (bare or quoted)
+prereqs: |                                      # optional, skill-only
+  Requires: <one-line summary>. See `references/SETUP.md` for step-by-step setup.
+dependencies:                                   # optional
+  skills:
+    - "https://github.com/<owner>/<repo>/tree/<ref>/skills/<other-skill>"
+  mcps:
+    - "https://github.com/<owner>/<repo>/tree/<ref>/mcps/<file>.json"
+---
+# Skill body (markdown, verbatim)
+```
+
+Required: `name`, `description`, `version`. Optional: `scope`, `prereqs`, `dependencies.skills`, `dependencies.mcps`.
+
+Field rules:
+
+- `description` is one short sentence.
+- `version` is mandatory and must be 3-segment semver. Both bare (`1.0.0`) and quoted (`"1.0.0"`) forms are accepted.
+- `prereqs` is a YAML literal-block string. Keep it short — link to a sibling `references/SETUP.md` for the long version.
+- `dependencies.skills` and `dependencies.mcps` are **arrays of bare origin URI strings**. Object form (`{origin: ...}`) is parsed but discouraged.
+- Dependencies may reference any public catalog — entries from other publishers are allowed by URL.
+
+## Frontmatter — Agent (`agents/<name>/AGENTS.md`)
+
+Same shape as Skill, with one difference: agents reject `prereqs`.
+
+```yaml
+---
+name: my-agent
+scope: example-org
+description: "What the agent does, one line."
 version: 1.0.0
 dependencies:
   skills:
-    - langsensei/security-audit
-    - style-guide
+    - "https://github.com/<owner>/<repo>/tree/<ref>/skills/git-pr"
   mcps:
-    - github
+    - "https://github.com/<owner>/<repo>/tree/<ref>/mcps/io.playwright_mcp.json"
 ---
-
-## Instructions
-
-Review the PR for security vulnerabilities and style violations...
+# Agent body (markdown — instructions, playbook, etc.)
 ```
 
-#### Agent Frontmatter
+Required: `name`, `description`, `version`. Optional: `scope`, `dependencies.skills`, `dependencies.mcps`.
 
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| `name` | Yes | string | Lowercase kebab-case identifier, optional `scope/name` format. Total length 1-64 chars including any scope prefix (see [Scoped Names](#scoped-names)) |
-| `description` | Yes | string | 1-1024 chars |
-| `version` | No | string | Semver. Defaults to `0.0.1` |
-| `dependencies` | No | object | Skills and MCPs this agent requires |
+`prereqs` is **rejected** on agents. If your agent needs setup steps, put them in the body as a `## Setup` section.
 
-### SKILL.md
-
-A superset of [Agent Skills](https://agentskills.io/specification). Standard Agent Skills work as-is.
-
-```markdown
----
-name: security-audit
-description: Identifies common security vulnerabilities in code.
-version: 1.2.0
-dependencies:
-  skills:
-    - cve-database
-  mcps:
-    - semgrep
-prereqs: "Requires a Semgrep API key. Set SEMGREP_KEY in your environment. Read references/setup-guide.md for details."
----
-
-## Instructions
-
-When reviewing code for security issues...
-```
-
-#### Skill Frontmatter
-
-| Field | Required | Type | Description |
-|-------|----------|------|-------------|
-| `name` | Yes | string | Lowercase kebab-case identifier, optional `scope/name` format. Total length 1-64 chars including any scope prefix (see [Scoped Names](#scoped-names)) |
-| `description` | Yes | string | 1-1024 chars |
-| `version` | No | string | Semver. Defaults to `0.0.1` |
-| `dependencies` | No | object | Skills and MCPs this skill requires |
-| `prereqs` | No | string | Prerequisites the LLM should check after installation |
-
-### Prerequisites
-
-The `prereqs` field is an optional string describing conditions or setup steps that should be verified after a skill is installed. The LLM reads it and takes appropriate action (e.g., verifying env vars, running setup commands, reading referenced files, informing the user).
-
-```yaml
-prereqs: "Run 'npm install -g playwright'. Ensure OPENAI_API_KEY is set. Read references/setup-guide.md for configuration details."
-```
-
-### MCP JSON
-
-Standard [Model Context Protocol](https://modelcontextprotocol.io) server configuration. MetaAgents does not modify or interpret the contents.
-
-The MCP name is derived from the filename and (for scoped names) the parent directory:
-
-- `mcps/filesystem.json` → name is `filesystem`
-- `mcps/io.github.modelcontextprotocol/filesystem.json` → name is `io.github.modelcontextprotocol/filesystem`
+## Frontmatter / format — MCP (`mcps/<namespace>_<short>.json`)
 
 ```json
 {
+  "_meta": {
+    "name": "<namespace>/<short>",
+    "origin": "https://github.com/<owner>/<repo>/tree/<ref>/mcps/<namespace>_<short>.json"
+  },
   "type": "stdio",
-  "command": "npx",
-  "args": ["@modelcontextprotocol/server-filesystem"]
+  "command": "...",
+  "args": ["..."]
 }
 ```
 
-#### MCP name validation
+Required `_meta.*`:
 
-MCP names follow the validation rules of the [official MCP registry](https://registry.modelcontextprotocol.io). MetaAgents accepts any name the registry would accept, plus an unscoped form for local-only use.
+- `_meta.name` is the MCP FQN. Reverse-DNS namespaces are preferred; single-segment vendor names are accepted. See [MCP names](#mcp-names) above.
+- `_meta.origin` is the canonical source URL of this file (so consumers can trace where the MCP definition came from). Required for every published MCP.
 
-| Form | Pattern | Length | Use case |
-|------|---------|--------|----------|
-| **Scoped** (registry-aligned) | `^[A-Za-z0-9.-]+/[A-Za-z0-9._-]+$` | 3-200 chars | Public MCPs (resolvable from the registry) |
-| **Unscoped** (local) | `^[A-Za-z0-9._-]+$` | 1-64 chars | Internal / community packages where collision is not a concern |
+Filename rule: the on-disk filename is `<namespace>_<short>.json` (replace `/` in the FQN with `_`). For example, the MCP whose `_meta.name` is `io.example/mcp` lives at `mcps/io.example_mcp.json`.
 
-**Why MCP rules differ from Agent/Skill rules.** MCPs are referenced from a public ownership-verified registry, which is the single source of truth for what scoped names exist. Per the [robustness principle](https://en.wikipedia.org/wiki/Robustness_principle) — *be liberal in what you accept* — MetaAgents accepts every name the registry accepts and does not impose additional syntactic restrictions on top (in particular: mixed case, underscores, and longer names are all permitted, matching the registry exactly). Agents and Skills, by contrast, follow the lowercase-kebab convention inherited from [agents.md](https://agents.md) and [Agent Skills](https://agentskills.io) and have their own stricter rules defined in their respective frontmatter tables.
+Other top-level fields (`type`, `command`, `args`, `env`, …) follow the [MCP client-config convention](https://modelcontextprotocol.io). Other `_meta.*` keys (e.g. registry sub-objects) survive untouched on re-write.
 
-## Scoped Names
+Files MUST be pretty-printed with 2-space indent and a trailing newline.
 
-Agent and skill names support an optional scope prefix using `scope/name` format:
+### MCP cross-platform rules
 
-- `security-audit` — unscoped (community/standard)
-- `langsensei/xiaohongshu` — scoped to `langsensei`
-- `openclaw/weather` — scoped to `openclaw`
+The MCP spec at modelcontextprotocol.io has **no** shell-style variable expansion: `command` is an executable name, `args` is an array of literal strings, `env` is an explicit map. Wrapping commands in `bash -c "..."` to get `$HOME` / `$PATH` expansion is a tempting workaround on POSIX that **breaks Windows immediately** (no `bash` on PATH; no POSIX env var names). MCP specs in this format MUST be cross-platform.
 
-Scope rules for agents and skills:
-- The **name part** (after `/`) follows kebab-case rules (`[a-z0-9-]`). The **scope part** (before `/`) follows the same rules but additionally allows `.` to support reverse-DNS-style namespaces. A scope is treated as a single atomic identifier — `io.playwright` and `com.example.team` are each *one* scope string, not nested sub-segments. Dots are not permitted in the name part.
-- A single `/` separates scope from name
-- Scoped and unscoped names coexist in the same registry
-- The full string (including scope) is the unique identifier — `security-audit` and `langsensei/security-audit` are two distinct entries, not aliases
+Four rules:
 
-For MCP names, see [MCP name validation](#mcp-name-validation) — MCPs follow the official registry's pattern, which is more permissive than the agent/skill rules above.
+1. **`command` is a bare executable name** — `npx`, `node`, `python`, `uvx`. Let the OS PATH resolve it (Windows ships `npx.cmd` shims for Node tooling; the same name works on every host). Do NOT hardcode `bash`, `/usr/bin/...`, or any other absolute interpreter.
+2. **No shell wrappers** — `["bash", "-c", "..."]` and friends are forbidden. If you need command composition, write a small `node` script inside your MCP project and call it directly.
+3. **`args` are literal strings** — no `$HOME`, no `${VAR}`, no `~/`. The MCP server receives every arg verbatim.
+4. **For paths that can't be hardcoded, use placeholder substitution** (see below). Hosts substitute these at provision time, before the MCP child is spawned, so the path the server sees is already absolute and platform-correct.
 
-### Recommended scope conventions
+### Placeholder substitution
 
-For agents and skills, scopes typically reflect publisher identity (`langsensei/`, `openclaw/`).
+Two well-known placeholders are supported in any string field of an MCP spec (`command`, any element of `args`, any value of `env`, plus nested strings inside any custom object you put in the spec):
 
-For MCPs, the [official MCP registry](https://registry.modelcontextprotocol.io) uses **reverse-DNS scopes** that the publisher can prove ownership of. Two namespace patterns are common:
+| Placeholder | Resolves to | Use for |
+| --- | --- | --- |
+| `${workspaceDir}` | The absolute path of the active workspace | State scoped to a single project (per-workspace cookies, repo-local credentials, browser login state that should reset between projects) |
+| `${globalDir}` | A stable per-host directory chosen by the runtime | State that genuinely belongs to the user account, not any single project (a global API token cache, a shared CA bundle, model weights downloaded once per machine) |
 
-- **GitHub-verified** — `io.github.<gh-user-or-org>/<server>` (e.g. `io.github.modelcontextprotocol/filesystem`)
-- **Domain-verified** — `<reverse-domain>/<server>` (e.g. `ai.aarna/atars-mcp`, `ac.inference.sh/mcp`)
+Hosts substitute both before writing the resolved `.mcp.json` to disk. The substituted paths use forward slashes regardless of host OS, so the same JSON value bytes ship to Windows and POSIX. A typo in a placeholder (`${workspceDir}`) MUST be rejected at install time with a clear error — placeholders are not silently passed through.
 
-MetaAgents recommends — but does not require — the same convention for MCPs published to public registries, so that names remain globally unique across publishers.
+Pick `${globalDir}` over `${workspaceDir}` only when the state genuinely belongs to the user account rather than the project — e.g. a model download cache or a global API token jar.
 
-Unscoped MCP names remain valid for local-only use, internal registries, or community packages where collision is not a concern.
+#### Example
 
-## Directory Layout
-
-The registry directory is organized by type, with scoped names mapped to subdirectories:
-
-```
-<registry>/
-├── agents/
-│   ├── <name>/AGENTS.md              # unscoped
-│   └── <scope>/<name>/AGENTS.md      # scoped
-├── skills/
-│   ├── <name>/SKILL.md               # unscoped
-│   └── <scope>/<name>/               # scoped
-│       ├── SKILL.md
-│       ├── scripts/                   # optional
-│       ├── references/                # optional
-│       └── assets/                    # optional
-└── mcps/
-    ├── <name>.json                    # unscoped
-    └── <scope>/<name>.json            # scoped
+```json
+{
+  "_meta": {
+    "name": "io.playwright/mcp",
+    "origin": "https://github.com/<owner>/<repo>/tree/main/mcps/io.playwright_mcp.json"
+  },
+  "type": "stdio",
+  "command": "npx",
+  "args": [
+    "-y",
+    "@playwright/mcp@latest",
+    "--headless",
+    "--storage-state",
+    "${workspaceDir}/.playwright/storage-state.json"
+  ]
+}
 ```
 
-How scoped names are mapped to the runtime environment is outside the scope of this specification. Two implementer concerns worth calling out:
+## Origin URI Grammar
 
-- **Flattening** for systems that require a single-level directory (e.g. encoding `scope/name` as `scope__name`).
-- **Case-sensitive uniqueness** is part of the abstract spec, but on case-insensitive filesystems (Windows NTFS default, macOS APFS default) MCP names that differ only in case will collide on disk; implementations may need to normalize, hash, or otherwise disambiguate such names.
+Dependencies (`dependencies.skills`, `dependencies.mcps`) and MCP `_meta.origin` are bare URI strings. Two schemes are accepted:
 
-## Dependencies
+- `https://github.com/<owner>/<repo>/tree/<ref>[/path]` — recommended for shared catalog entries; supports any public GitHub repo
+- `file:<absolute-path>` — local-only; never commit a `file:` origin
 
-```yaml
-dependencies:
-  skills:
-    - langsensei/security-audit
-    - style-guide
-  mcps:
-    - io.github.modelcontextprotocol/filesystem
-    - github
-```
+## CHANGELOG Conventions
 
-Both `skills` and `mcps` are optional arrays of names referencing other entries in the same registry.
+Every published agent and skill ships a `CHANGELOG.md` next to its `AGENTS.md` / `SKILL.md`.
+
+- Version headers use `## X.Y.Z (YYYY-MM-DD)` format. Example: `## 1.2.0 (2026-04-17)`.
+- Bump guidance:
+  - **patch (`X.Y.Z+1`)** — bug fixes, typos, minor edits that don't change behavior or the public surface
+  - **minor (`X.Y+1.0`)** — new features, behavioral additions, new optional dependencies
+  - **major (`X+1.0.0`)** — breaking changes (rename, dropping a public dependency, removing a tool, semantic change to a workflow that downstream consumers rely on)
+- One version bump per change set per agent/skill — do not bump version multiple times within a single PR.
+- Frontmatter `version` MUST match the latest entry in `CHANGELOG.md`.
+- Sections that document past renames or breaking changes are **provenance** — do not delete them when later versions move on.
 
 ## Resolution Rules
 
 1. **Topological order** — dependencies are resolved depth-first
 2. **No cycles** — circular dependencies are invalid
-3. **Missing dependencies** — resolution fails if a declared dependency is absent
-4. **Name uniqueness** — the fully-qualified name (including scope if present) must be unique within each type (agents, skills, mcps)
+3. **Missing dependencies** — resolution fails if a declared dependency origin is unreachable or returns 404
+4. **Name uniqueness** — the fully-qualified name (including scope if present) MUST be unique within each type (agents, skills, mcps) at any single resolution layer
 5. **MCPs are leaves** — MCP entries cannot declare dependencies
 
 ## Backward Compatibility
 
-MetaAgents is a strict superset:
-
-- An `AGENTS.md` without frontmatter is a valid agents.md file
-- A `SKILL.md` without `dependencies` is a valid Agent Skills file
-- Tools that don't understand MetaAgents fields simply ignore them
+MetaAgents extends [agents.md](https://agents.md) and [Agent Skills](https://agentskills.io) with: separate `scope:` field, mandatory `version`, `dependencies` block, MCP `_meta.origin`, and the placeholder/cross-platform rules for MCPs. An `AGENTS.md` or `SKILL.md` that omits the MetaAgents-only fields still parses as a valid agents.md / Agent Skills file; tools that don't understand MetaAgents simply ignore the extra fields.
 
 ## Out of Scope
 
 MetaAgents is format-level only. It does **not** define:
 
-- How to fetch or publish packages (that's for package managers)
+- How to fetch or publish packages (that's for package managers and runtimes)
 - How to provision or execute agents (that's for runtimes)
 - How to interpret instructions (that's for LLMs)
 - How to spawn MCP servers (that's for substrates)
+- Authoring conventions for agent body sections (different runtimes use different playbook structures)
 
 ## License
 
