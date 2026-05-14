@@ -116,8 +116,7 @@ Required: `name`, `description`, `version`. Optional: `scope`, `dependencies.ski
 ```json
 {
   "_meta": {
-    "name": "<namespace>/<short>",
-    "origin": "https://github.com/<owner>/<repo>/tree/<ref>/mcps/<namespace>_<short>.json"
+    "name": "<namespace>/<short>"
   },
   "type": "stdio",
   "command": "...",
@@ -128,7 +127,6 @@ Required: `name`, `description`, `version`. Optional: `scope`, `dependencies.ski
 Required `_meta.*`:
 
 - `_meta.name` is the MCP FQN. Reverse-DNS namespaces are preferred; single-segment vendor names are accepted. See [MCP names](#mcp-names) above.
-- `_meta.origin` is the canonical source URL of this file (so consumers can trace where the MCP definition came from). Required for every published MCP.
 
 Filename rule: the on-disk filename is `<namespace>_<short>.json` (replace `/` in the FQN with `_`). For example, the MCP whose `_meta.name` is `io.example/mcp` lives at `mcps/io.example_mcp.json`.
 
@@ -154,19 +152,18 @@ Two well-known placeholders are supported in any string field of an MCP spec (`c
 | Placeholder | Resolves to | Use for |
 | --- | --- | --- |
 | `${workspaceDir}` | The absolute path of the active workspace | State scoped to a single project (per-workspace cookies, repo-local credentials, browser login state that should reset between projects) |
-| `${globalDir}` | A stable per-host directory chosen by the runtime | State that genuinely belongs to the user account, not any single project (a global API token cache, a shared CA bundle, model weights downloaded once per machine) |
+| `${sharedDir}` | A stable per-host directory chosen by the runtime | State that genuinely belongs to the user account, not any single project (a global API token cache, a shared CA bundle, model weights downloaded once per machine) |
 
 Hosts substitute both before writing the resolved `.mcp.json` to disk. The substituted paths use forward slashes regardless of host OS, so the same JSON value bytes ship to Windows and POSIX. A typo in a placeholder (`${workspceDir}`) MUST be rejected at install time with a clear error — placeholders are not silently passed through.
 
-Pick `${globalDir}` over `${workspaceDir}` only when the state genuinely belongs to the user account rather than the project — e.g. a model download cache or a global API token jar.
+Pick `${sharedDir}` over `${workspaceDir}` only when the state genuinely belongs to the user account rather than the project — e.g. a model download cache or a global API token jar.
 
 #### Example
 
 ```json
 {
   "_meta": {
-    "name": "io.playwright/mcp",
-    "origin": "https://github.com/<owner>/<repo>/tree/main/mcps/io.playwright_mcp.json"
+    "name": "io.playwright/mcp"
   },
   "type": "stdio",
   "command": "npx",
@@ -182,7 +179,7 @@ Pick `${globalDir}` over `${workspaceDir}` only when the state genuinely belongs
 
 ## Origin URI Grammar
 
-Dependencies (`dependencies.skills`, `dependencies.mcps`) and MCP `_meta.origin` are bare URI strings. Two schemes are accepted:
+Dependency origins (`dependencies.skills`, `dependencies.mcps`) are bare URI strings. Two schemes are accepted:
 
 - `https://github.com/<owner>/<repo>/tree/<ref>[/path]` — recommended for shared catalog entries; supports any public GitHub repo
 - `file:<absolute-path>` — local-only; never commit a `file:` origin
@@ -210,7 +207,7 @@ Every published agent and skill ships a `CHANGELOG.md` next to its `AGENTS.md` /
 
 ## Backward Compatibility
 
-MetaAgents extends [agents.md](https://agents.md) and [Agent Skills](https://agentskills.io) with: separate `scope:` field, mandatory `version`, `dependencies` block, MCP `_meta.origin`, and the placeholder/cross-platform rules for MCPs. An `AGENTS.md` or `SKILL.md` that omits the MetaAgents-only fields still parses as a valid agents.md / Agent Skills file; tools that don't understand MetaAgents simply ignore the extra fields.
+MetaAgents extends [agents.md](https://agents.md) and [Agent Skills](https://agentskills.io) with: separate `scope:` field, mandatory `version`, `dependencies` block, and the placeholder/cross-platform rules for MCPs. An `AGENTS.md` or `SKILL.md` that omits the MetaAgents-only fields still parses as a valid agents.md / Agent Skills file; tools that don't understand MetaAgents simply ignore the extra fields.
 
 ## Out of Scope
 
